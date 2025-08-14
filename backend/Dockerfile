@@ -13,6 +13,11 @@ RUN npm install
 # Bundle app source
 COPY . .
 
+# --- DEBUGGING STEP ---
+# List all files immediately after copy to see what is in the build context
+RUN echo "--- Files after COPY . . ---" && ls -lR
+# --- END DEBUGGING STEP ---
+
 # Creates a "dist" folder with the production build
 RUN npm run build
 
@@ -20,4 +25,4 @@ RUN npm run build
 EXPOSE 3001
 
 # Run the app when the container launches
-CMD ["npm", "start"]
+CMD [ "tail", "-f", "/dev/null" ]
