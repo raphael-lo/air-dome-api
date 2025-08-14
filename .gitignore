@@ -1,0 +1,5 @@
+# Never commit environment files
+.env*
+
+# Ignore local database files
+*.db
