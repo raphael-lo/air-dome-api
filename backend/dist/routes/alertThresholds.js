@@ -1,0 +1,9 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const alertThresholdController_1 = require("../controllers/alertThresholdController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get('/alert-thresholds/:siteId', auth_1.authenticateToken, alertThresholdController_1.getAlertThresholds);
+router.post('/alert-thresholds/:siteId/:metricName', auth_1.authenticateToken, alertThresholdController_1.updateAlertThreshold);
+exports.default = router;
