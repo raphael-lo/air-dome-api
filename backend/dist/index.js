@@ -22,7 +22,7 @@ const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const port = process.env.PORT || 3001;
 const corsOptions = {
-    origin: 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     optionsSuccessStatus: 200
 };
 app.use((0, cors_1.default)(corsOptions));
