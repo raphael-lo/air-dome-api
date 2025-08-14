@@ -4,6 +4,8 @@ services:
   backend:
     build: ./backend
     container_name: backend
+    ports:
+      - "3001:3001"
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
@@ -27,6 +29,8 @@ services:
   influxdb:
     image: influxdb:2.7.1
     container_name: influxdb
+    ports:
+      - "8086:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb2
     environment:
@@ -42,10 +46,13 @@ services:
   mqtt-broker:
     image: eclipse-mosquitto:2.0.15
     container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf # Optional: if you have a custom config
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
     networks:
       - air-dome-net
 
