@@ -16,6 +16,11 @@ COPY . .
 # Creates a "dist" folder with the production build
 RUN npm run build
 
+# --- DEBUGGING STEP ---
+# List the contents of the dist directory to see if the build was successful
+RUN ls -lR dist
+# --- END DEBUGGING STEP ---
+
 # Make port 3001 available to the world outside this container
 EXPOSE 3001
 
