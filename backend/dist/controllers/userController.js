@@ -35,17 +35,23 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.createUser = createUser;
 const login = (req, res) => {
     const { username, password } = req.body;
+    console.log('Login attempt for username:', username);
     if (!username || !password) {
         return res.status(400).json({ message: 'Username and password are required' });
     }
     databaseService_1.default.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => __awaiter(void 0, void 0, void 0, function* () {
         if (err) {
+            console.error('Database error during login:', err.message);
             return res.status(500).json({ message: 'Error logging in', error: err.message });
         }
         if (!row) {
+            console.log('User not found:', username);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+        console.log('User found. Stored password hash:', row.password);
+        console.log('Password received from request:', password);
         const isPasswordValid = yield bcryptjs_1.default.compare(password, row.password);
+        console.log('Bcrypt comparison result (isPasswordValid):', isPasswordValid);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }

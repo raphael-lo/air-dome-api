@@ -27,20 +27,29 @@ export const createUser = async (req: Request, res: Response) => {
 export const login = (req: Request, res: Response) => {
   const { username, password } = req.body;
 
+  console.log('Login attempt for username:', username);
+
   if (!username || !password) {
     return res.status(400).json({ message: 'Username and password are required' });
   }
 
   db.get('SELECT * FROM users WHERE username = ?', [username], async (err, row: User) => {
     if (err) {
+      console.error('Database error during login:', err.message);
       return res.status(500).json({ message: 'Error logging in', error: err.message });
     }
 
     if (!row) {
+      console.log('User not found:', username);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log('User found. Stored password hash:', row.password);
+    console.log('Password received from request:', password);
+
     const isPasswordValid = await bcrypt.compare(password, row.password);
+
+    console.log('Bcrypt comparison result (isPasswordValid):', isPasswordValid);
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
