@@ -7,14 +7,11 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-# Install any needed packages
-RUN npm install
+# Install production dependencies
+RUN npm ci --omit=dev
 
-# Bundle app source
+# Bundle app source, including the pre-built dist directory
 COPY . .
 
-# Creates a "dist" folder with the production build
-RUN npm run build
-
-# Keep the container alive for debugging
-CMD [ "tail", "-f", "/dev/null" ]
+# The app is already built, so we just need to run it.
+# The CMD will be set back to "npm start" in the docker-compose.yml
