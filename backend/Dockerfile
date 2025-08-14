@@ -17,8 +17,12 @@ COPY . .
 RUN npm run build
 
 # --- DEBUGGING STEP ---
-# List the contents of the dist directory to see if the build was successful
-RUN ls -lR dist
+# Verify that the main file exists. If not, list the directory and exit with an error.
+RUN if [ ! -f dist/index.js ]; then \
+      echo "Error: dist/index.js not found after build." && \
+      ls -lR dist && \
+      exit 1; \
+    fi
 # --- END DEBUGGING STEP ---
 
 # Make port 3001 available to the world outside this container
