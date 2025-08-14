@@ -17,6 +17,7 @@ const alertThresholds_1 = __importDefault(require("./routes/alertThresholds"));
 const httpSensor_1 = __importDefault(require("./routes/httpSensor"));
 require("./services/databaseService");
 require("./services/mqttService");
+require("./init_db"); // Add this line to ensure DB is initialized on startup
 const websocketService_1 = require("./services/websocketService");
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);

@@ -13,6 +13,7 @@ import alertThresholdsRouter from './routes/alertThresholds';
 import httpSensorRouter from './routes/httpSensor';
 import './services/databaseService';
 import './services/mqttService';
+import './init_db'; // Add this line to ensure DB is initialized on startup
 import { initializeWebSocket } from './services/websocketService';
 
 const app = express();
