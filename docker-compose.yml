@@ -24,7 +24,7 @@ services:
       - INFLUXDB_BUCKET=my-bucket
       - MQTT_BROKER_URL=mqtt://mqtt-broker:1883
       - CORS_ORIGIN=https://air-dome.yotatech.com.hk
-    command: npm start
+    command: ls -lR
 
   influxdb:
     image: influxdb:2.7.1
