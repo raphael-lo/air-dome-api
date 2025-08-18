@@ -1,21 +1,46 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const path_1 = __importDefault(require("path"));
-const DB_FILE = path_1.default.resolve(__dirname, '../air_dome.db');
+const fs_1 = __importDefault(require("fs"));
+const DB_FILE = path_1.default.resolve(__dirname, 'air_dome.db');
+const INIT_SQL_FILE = path_1.default.resolve(__dirname, './src/config/init.sql');
 const db = new sqlite3_1.default.Database(DB_FILE, (err) => {
     if (err) {
         console.error('Error opening database', err.message);
-        return;
     }
-    console.log(`Connected to the SQLite database at ${DB_FILE}`);
-    db.serialize(() => {
-        db.run('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)');
-        db.run('CREATE TABLE IF NOT EXISTS sensor_data (id INTEGER PRIMARY KEY AUTOINCREMENT, pressure REAL, temperature REAL, humidity REAL, windSpeed REAL, timestamp TEXT)');
-        db.run(`INSERT INTO users (username, password) SELECT 'admin', '$2a$10$//sS8k4g/9Y/8vH.gS.Y5u3.qU4bO9zJ.gS.Y5u3.qU4bO9zJ.gS.Y5' WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin')`);
-    });
-    db.close();
 });
+const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
+    const initSql = fs_1.default.readFileSync(INIT_SQL_FILE, 'utf-8');
+    db.exec(initSql, function (err) {
+        if (err) {
+            console.error('Error initializing database:', err.message);
+        }
+        else {
+            console.log('Tables created successfully');
+            // Add a check to see if tables exist after creation
+            db.all("SELECT name FROM sqlite_master WHERE type='table';", (err, tables) => {
+                if (err) {
+                    console.error('Error checking tables:', err.message);
+                }
+                else {
+                    console.log('Tables found after init:', tables);
+                }
+            });
+        }
+        db.close();
+    });
+});
+createTables();

@@ -18,14 +18,7 @@ const initializeWebSocket = (server) => {
             ws.on('error', (error) => {
                 console.error('WebSocket client error:', error);
             });
-            // Send a test message immediately to see if it goes through
-            try {
-                ws.send(JSON.stringify({ status: 'connected', message: 'Welcome!' }));
-                console.log('Sent welcome message to client.');
-            }
-            catch (sendError) {
-                console.error('Error sending welcome message:', sendError);
-            }
+            ws.send(JSON.stringify({ status: 'connected', message: 'Welcome!' }));
         });
         wss.on('error', (error) => {
             console.error('WebSocket server error:', error);
@@ -38,11 +31,28 @@ const initializeWebSocket = (server) => {
 exports.initializeWebSocket = initializeWebSocket;
 const broadcast = (data) => {
     if (!wss) {
+        console.log('[Broadcast] WebSocket server not initialized. Skipping broadcast.');
+        return;
+    }
+    const clientCount = wss.clients.size;
+    console.log(`[Broadcast] Attempting to broadcast to ${clientCount} client(s).`);
+    if (clientCount === 0) {
         return;
     }
     wss.clients.forEach((client) => {
+        console.log(`[Broadcast] Checking client. ReadyState: ${client.readyState}`);
         if (client.readyState === ws_1.WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
+            try {
+                const jsonData = JSON.stringify(data);
+                client.send(jsonData);
+                console.log(`[Broadcast] Sent data to client: ${jsonData}`);
+            }
+            catch (error) {
+                console.error('[Broadcast] Error sending data to client:', error);
+            }
+        }
+        else {
+            console.log('[Broadcast] Client not open. Skipping.');
         }
     });
 };

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.queryHistoricalData = exports.querySensorData = exports.writeSensorData = void 0;
+exports.queryHistoricalData = exports.querySensorData = exports.writeSensorData = exports.writeMetric = void 0;
 const influxdb_client_1 = require("@influxdata/influxdb-client");
 const url = process.env.INFLUXDB_URL || 'http://localhost:8086';
 const token = 'my-super-secret-token';
@@ -17,6 +17,27 @@ const org = 'my-org';
 const bucket = 'my-bucket';
 const influxDB = new influxdb_client_1.InfluxDB({ url, token });
 const writeApi = influxDB.getWriteApi(org, bucket);
+/**
+ * Writes a single metric value to InfluxDB.
+ * @param measurement The InfluxDB measurement (e.g., 'sensor_data').
+ * @param field The metric field name (e.g., 'internalTemperature').
+ * @param value The numeric value of the metric.
+ */
+const writeMetric = (measurement, field, value, tags) => {
+    const point = new influxdb_client_1.Point(measurement)
+        .floatField(field, value)
+        .timestamp(new Date()); // Use current server time for the metric
+    if (tags) {
+        for (const [key, val] of Object.entries(tags)) {
+            point.tag(key, val);
+        }
+    }
+    writeApi.writePoint(point);
+    // For performance, consider flushing in batches or on an interval
+    writeApi.flush();
+};
+exports.writeMetric = writeMetric;
+// The old function remains for now to ensure no other parts of the app break.
 const writeSensorData = (data) => {
     const point = new influxdb_client_1.Point('sensor_data')
         .floatField('internalPressure', data.internalPressure)

@@ -5,5 +5,6 @@ const alertThresholdController_1 = require("../controllers/alertThresholdControl
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 router.get('/alert-thresholds/:siteId', auth_1.authenticateToken, alertThresholdController_1.getAlertThresholds);
-router.post('/alert-thresholds/:siteId/:metricName', auth_1.authenticateToken, alertThresholdController_1.updateAlertThreshold);
+router.post('/alert-thresholds/:siteId/:metricId', auth_1.authenticateToken, (0, auth_1.authorizeRole)(['Admin']), alertThresholdController_1.updateAlertThreshold);
+router.delete('/alert-thresholds/:siteId/:metricId', auth_1.authenticateToken, (0, auth_1.authorizeRole)(['Admin']), alertThresholdController_1.deleteAlertThreshold);
 exports.default = router;

@@ -6,12 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.acknowledgeAlert = exports.getAlerts = void 0;
 const databaseService_1 = __importDefault(require("../services/databaseService"));
 const getAlerts = (req, res) => {
-    const { siteId } = req.query;
+    const { site_id } = req.query;
     let query = 'SELECT * FROM alerts';
     const params = [];
-    if (siteId) {
-        query += ' WHERE siteId = ?';
-        params.push(siteId);
+    if (site_id) {
+        query += ' WHERE site_id = ?';
+        params.push(site_id);
     }
     databaseService_1.default.all(query, params, (err, rows) => {
         if (err) {
