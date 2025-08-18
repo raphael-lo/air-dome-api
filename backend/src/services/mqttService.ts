@@ -3,7 +3,7 @@ import { writeMetric } from './influxdbService';
 import { broadcast } from './websocketService';
 import db from './databaseService';
 import { v4 as uuidv4 } from 'uuid';
-import { StatusLevel, type AlertThreshold, type Metric } from '../types';
+import { StatusLevel, type AlertThreshold, type Metric } from '@/types';
 
 // --- In-memory state for alerting ---
 let metrics: Metric[] = [];
