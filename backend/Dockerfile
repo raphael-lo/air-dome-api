@@ -1,20 +1,34 @@
-# Use an official Node.js runtime as a parent image
-FROM node:18-alpine
+# --- Stage 1: Builder ---
+FROM node:18-alpine AS builder
 
-# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+# Copy package.json and package-lock.json
+COPY package*.json ./backend
 
-# Install production dependencies
-RUN npm ci --omit=dev
+# Install ALL dependencies (including devDependencies for building)
+RUN npm ci
 
-# Bundle app source, including the pre-built dist directory
+# Copy all application source code
 COPY . .
 
-# Build the TypeScript code into JavaScript for production
+# Build the TypeScript code into JavaScript
 RUN npm run build
+
+# --- Stage 2: Production Runtime ---
+FROM node:18-alpine AS runner
+
+WORKDIR /usr/src/app
+
+# Copy package.json and package-lock.json (only for production dependencies)
+COPY package*.json ./backend
+
+# Install only production dependencies
+RUN npm ci --omit=dev
+
+# Copy only the built application from the builder stage
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/src/config ./src/config # Copy config if it's not in dist
 
 # The app is already built, so we just need to run it.
 # The CMD will be set back to "npm start" in the docker-compose.yml
