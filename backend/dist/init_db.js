@@ -1,46 +1,43 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
-const DB_FILE = path_1.default.resolve(__dirname, 'air_dome.db');
-const INIT_SQL_FILE = path_1.default.resolve(__dirname, './src/config/init.sql');
+const fs_1 = __importDefault(require("fs")); // Added
+const DB_FILE = path_1.default.resolve(__dirname, '../air_dome.db');
 const db = new sqlite3_1.default.Database(DB_FILE, (err) => {
     if (err) {
         console.error('Error opening database', err.message);
+        return;
     }
-});
-const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
-    const initSql = fs_1.default.readFileSync(INIT_SQL_FILE, 'utf-8');
-    db.exec(initSql, function (err) {
-        if (err) {
-            console.error('Error initializing database:', err.message);
-        }
-        else {
-            console.log('Tables created successfully');
-            // Add a check to see if tables exist after creation
-            db.all("SELECT name FROM sqlite_master WHERE type='table';", (err, tables) => {
-                if (err) {
-                    console.error('Error checking tables:', err.message);
-                }
-                else {
-                    console.log('Tables found after init:', tables);
-                }
-            });
-        }
-        db.close();
+    console.log(`Connected to the SQLite database at ${DB_FILE}`);
+    db.serialize(() => {
+        const INIT_SQL_FILE = path_1.default.resolve(__dirname, './config/init.sql');
+        const initSql = fs_1.default.readFileSync(INIT_SQL_FILE, 'utf-8');
+        db.exec(initSql, function (err) {
+            if (err) {
+                console.error('Error initializing database:', err.message);
+            }
+            else {
+                console.log('Tables created successfully');
+            }
+        });
+        // db.run(`INSERT INTO fan_sets (id, name, status, mode, inflow, outflow) SELECT 'fan-set-1', 'Fan Set 1', 'on', 'auto', 50, 50 WHERE NOT EXISTS (SELECT 1 FROM fan_sets WHERE id = 'fan-set-1')`);
+        // db.run(`INSERT INTO fan_sets (id, name, status, mode, inflow, outflow) SELECT 'fan-set-2', 'Fan Set 2', 'off', 'manual', 0, 0 WHERE NOT EXISTS (SELECT 1 FROM fan_sets WHERE id = 'fan-set-2')`);
+        // db.run(`INSERT INTO lighting_states (id, lights_on, brightness) SELECT 1, 1, 80 WHERE NOT EXISTS (SELECT 1 FROM lighting_state WHERE id = 1)`);
+        // db.run(`INSERT INTO alerts (id, siteId, parameter, message, severity, timestamp, status) SELECT 'alert-1', 'site-1', 'Internal Pressure', 'Pressure is critically low!', 'danger', '2024-05-23T10:00:00Z', 'active' WHERE NOT EXISTS (SELECT 1 FROM alerts WHERE id = 'alert-1')`);
+        // db.run(`INSERT INTO alerts (id, siteId, parameter, message, severity, timestamp, status) SELECT 'alert-2', 'site-1', 'External Wind Speed', 'High wind speeds detected.', 'warn', '2024-05-23T10:05:00Z', 'active' WHERE NOT EXISTS (SELECT 1 FROM alerts WHERE id = 'alert-2')`);
+        // db.run(`INSERT INTO sections (name, name_tc, item_order) SELECT 'Dome Integrity', 'section_dome_integrity_name_tc', 0 WHERE NOT EXISTS (SELECT 1 FROM sections WHERE name = 'Dome Integrity')`);
+        // db.run(`INSERT INTO sections (name, name_tc, item_order) SELECT 'Environment', 'section_environment_name_tc', 1 WHERE NOT EXISTS (SELECT 1 FROM sections WHERE name = 'Environment')`);
+        // db.run(`INSERT INTO sections (name, name_tc, item_order) SELECT 'Air Quality', 'section_air_quality_name_tc', 2 WHERE NOT EXISTS (SELECT 1 FROM sections WHERE name = 'Air Quality')`);
+        // db.run(`INSERT INTO sections (name, name_tc, item_order) SELECT 'Systems Status', 'section_systems_status_name_tc', 3 WHERE NOT EXISTS (SELECT 1 FROM sections WHERE name = 'Systems Status')`);
+        // db.run(`INSERT INTO metrics (mqtt_param, display_name, display_name_tc, device_id, unit, icon) SELECT 'pressure', 'Presure', 'Presure_tc', 'device-1', 'Pa', 'PressureIcon' WHERE NOT EXISTS (SELECT 1 FROM metrics WHERE mqtt_param = 'pressure')`);
+        // db.run(`INSERT INTO metrics (mqtt_param, display_name, display_name_tc, device_id, unit, icon) SELECT 'temperature', 'Temperature', 'Temperature_tc', 'device-2', '°C', 'TempIcon' WHERE NOT EXISTS (SELECT 1 FROM metrics WHERE mqtt_param = 'temperature')`);
+        // db.run(`INSERT INTO metric_groups (name, name_tc, icon, metric1_id, metric1_display_name, metric1_display_name_tc, metric2_id, metric2_display_name, metric2_display_name_tc) SELECT 'group persure', 'group_pressure_name_tc', 'PressureIcon', 1, 'metric_internal_pressure_display_name', 'metric_internal_pressure_display_name_tc', 2, 'metric_external_pressure_display_name', 'metric_external_pressure_display_name_tc' WHERE NOT EXISTS (SELECT 1 FROM metric_groups WHERE name = 'group_pressure_name')`);
+        // db.run(`INSERT INTO metric_groups (name, name_tc, icon, metric1_id, metric1_display_name, metric1_display_name_tc, metric2_id, metric2_display_name, metric2_display_name_tc) SELECT 'group temp', 'group_temperature_name_tc', 'TempIcon', 3, 'metric_internal_temperature_display_name', 'metric_internal_temperature_display_name_tc', 4, 'metric_external_temperature_display_name', 'metric_external_temperature_display_name_tc' WHERE NOT EXISTS (SELECT 1 FROM metric_groups WHERE name = 'group_temperature_name')`);
     });
+    db.close();
 });
-createTables();
+//# sourceMappingURL=init_db.js.map
