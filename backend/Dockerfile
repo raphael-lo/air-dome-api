@@ -13,5 +13,8 @@ RUN npm ci --omit=dev
 # Bundle app source, including the pre-built dist directory
 COPY . .
 
+# Build the TypeScript code into JavaScript for production
+RUN npm run build
+
 # The app is already built, so we just need to run it.
 # The CMD will be set back to "npm start" in the docker-compose.yml
