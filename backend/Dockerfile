@@ -4,7 +4,7 @@ FROM node:18-alpine AS builder
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json
-COPY package*.json ./backend
+COPY package*.json ./
 
 # Install ALL dependencies (including devDependencies for building)
 RUN npm ci
@@ -21,7 +21,7 @@ FROM node:18-alpine AS runner
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json (only for production dependencies)
-COPY package*.json ./backend
+COPY package*.json ./
 
 # Install only production dependencies
 RUN npm ci --omit=dev
