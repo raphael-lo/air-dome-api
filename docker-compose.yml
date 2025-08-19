@@ -21,7 +21,7 @@ services:
     environment:
       - PORT=3001 # Keep non-sensitive fixed values
     volumes:
-      - air_dome_db_data:/usr/src/app/air_dome.db # Persist the SQLite database
+      - air_dome_db_data:/usr/src/app/data # Mount the SQLite database directory
     command: npm start
 
   influxdb:
