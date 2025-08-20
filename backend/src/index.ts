@@ -16,7 +16,7 @@ import metricGroupRouter from './routes/metricGroup';
 import sectionRouter from './routes/section';
 import domeMetricsRouter from './routes/domeMetrics';
 import './services/databaseService';
-import { initializeDatabase } from '../init_db';
+import { initializeDatabase } from './init_db';
 import { initializeWebSocket } from './services/websocketService';
 import { authenticateToken } from './middleware/auth';
 
