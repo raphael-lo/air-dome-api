@@ -2,6 +2,13 @@ import { Request, Response } from 'express';
 import { mqttClient } from '../services/mqttService';
 
 export const postSensorData = (req: Request, res: Response) => {
+  // Temporary logging for debugging vendor integration
+  console.log('--- New Request from HTTP Sensor ---');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('--- End of Request ---');
+
   const data = req.body;
   const topic = process.env.MQTT_TOPIC || 'air-dome/sensors';
 
