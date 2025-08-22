@@ -13,23 +13,14 @@ export interface Metric {
   section_item_id?: number;
 }
 
-export const getMetrics = () => {
-  return new Promise<Metric[]>((resolve, reject) => {
-    db.all('SELECT * FROM metrics', (err, rows: any[]) => {
+export const getMetrics = (): Promise<Metric[]> => {
+  const sql = `SELECT id, topic, device_param, device_id, mqtt_param, display_name, display_name_tc, icon, unit FROM metrics`;
+  return new Promise((resolve, reject) => {
+    db.all(sql, [], (err, rows) => {
       if (err) {
         reject(err);
       } else {
-        const metrics: Metric[] = rows.map(row => ({
-          id: row.id,
-          mqtt_param: row.mqtt_param,
-          device_param: row.device_param, // Mapped
-          display_name: row.display_name,
-          display_name_tc: row.display_name_tc,
-          device_id: row.device_id,
-          icon: row.icon,
-          unit: row.unit,
-        }));
-        resolve(metrics);
+        resolve(rows as Metric[]);
       }
     });
   });
