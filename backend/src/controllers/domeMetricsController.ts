@@ -1,7 +1,6 @@
-
 import { Request, Response } from 'express';
 import db from '../services/databaseService';
-import { Metric } from '../models/metric'; // Added this line
+import { Metric } from '../types';
 
 interface SectionItem {
   item_id: number;
@@ -226,7 +225,7 @@ export const getDomeMetricsStructure = (req: Request, res: Response) => {
       });
       section.items.forEach(item => {
         if ('metrics' in item) { // If it's a MetricGroup
-          item.metrics.sort((a, b) => a.id - b.id); // Sort metrics within group
+          item.metrics.sort((a: Metric, b: Metric) => (a.id ?? 0) - (b.id ?? 0)); // Sort metrics within group
         }
       });
     });
