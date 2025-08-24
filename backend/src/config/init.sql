@@ -118,11 +118,11 @@ CREATE TABLE IF NOT EXISTS alert_thresholds (
 -- INSERT INTO section_items (section_id, item_id, item_type, item_order) SELECT 2, 2, 'group', 0 WHERE NOT EXISTS (SELECT 1 FROM section_items WHERE section_id = 2 AND item_id = 2 AND item_type = 'group');
 
 -- Fan Sets Seed Data --
--- INSERT INTO fan_sets (id, name, status, mode, inflow, outflow) SELECT 'fan_set_1', 'Fan Set 1', 'on', 'auto', 75, 60 WHERE NOT EXISTS (SELECT 1 FROM fan_sets WHERE id = 'fan_set_1');
--- INSERT INTO fan_sets (id, name, status, mode, inflow, outflow) SELECT 'fan_set_2', 'Fan Set 2', 'on', 'manual', 50, 50 WHERE NOT EXISTS (SELECT 1 FROM fan_sets WHERE id = 'fan_set_2');
+INSERT INTO fan_sets (id, name, status, mode, inflow, outflow) SELECT 'fan_set_1', 'Fan Set 1', 'on', 'auto', 75, 60 WHERE NOT EXISTS (SELECT 1 FROM fan_sets WHERE id = 'fan_set_1');
+INSERT INTO fan_sets (id, name, status, mode, inflow, outflow) SELECT 'fan_set_2', 'Fan Set 2', 'on', 'manual', 50, 50 WHERE NOT EXISTS (SELECT 1 FROM fan_sets WHERE id = 'fan_set_2');
 
 -- Lighting State Seed Data --
--- INSERT INTO lighting_state (id, lights_on, brightness) SELECT 1, 1, 80 WHERE NOT EXISTS (SELECT 1 FROM lighting_state WHERE id = 1);
+INSERT INTO lighting_state (id, lights_on, brightness) SELECT 1, 1, 80 WHERE NOT EXISTS (SELECT 1 FROM lighting_state WHERE id = 1);
 
 -- Alert Thresholds Seed Data --
 -- INSERT INTO alert_thresholds (id, site_id, metric_id, min_warning, max_warning, min_alert, max_alert) 
