@@ -5,9 +5,15 @@ import db from './databaseService';
 import { v4 as uuidv4 } from 'uuid';
 import { StatusLevel, type AlertThreshold, type Metric } from '../types';
 
-// --- In-memory cache for metric rules ---
+// --- In-memory cache for metric rules and stats ---
 type MetricRule = Metric & { topic: string };
 let metricRules: MetricRule[] = [];
+let connectedClients = 0;
+
+// Export stats for other modules to access
+export const getStats = () => ({
+  connectedClients,
+});
 
 const severityOrder = {
   [StatusLevel.Ok]: 0,
@@ -113,6 +119,12 @@ mqttClient.on('connect', async () => {
       else console.log('Subscribed to all topics (#) to process messages based on loaded rules.');
     });
 
+    // Subscribe to system topics for stats
+    const SYS_TOPIC_CLIENTS_CONNECTED = '$SYS/broker/clients/connected';
+    mqttClient.subscribe(SYS_TOPIC_CLIENTS_CONNECTED, (err) => {
+        if (err) console.error(`Failed to subscribe to ${SYS_TOPIC_CLIENTS_CONNECTED}`)
+    });
+
     // Listen for a special topic to reload rules without restarting the backend
     const RELOAD_RULES_TOPIC = 'air-dome/config/reload';
     mqttClient.subscribe(RELOAD_RULES_TOPIC, (err) => {
@@ -120,6 +132,12 @@ mqttClient.on('connect', async () => {
     });
 
     mqttClient.on('message', (topic, message) => {
+      // Update stats
+      if (topic === SYS_TOPIC_CLIENTS_CONNECTED) {
+        connectedClients = parseInt(message.toString(), 10);
+        return; // No further processing needed
+      }
+
       let payload;
       const messageString = message.toString();
 
