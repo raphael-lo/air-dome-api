@@ -181,6 +181,11 @@ mqttClient.on('connect', async () => {
 
             matchedRules.forEach(metricRule => {
                 const metricValue = payload[metricRule.mqtt_param];
+                // --- DEBUGGING LOG ---
+                if (metricRule.mqtt_param === 'pressure') {
+                    console.log(`[DEBUG] Processing 'pressure'. Value: ${metricValue}, Type: ${typeof metricValue}`);
+                }
+                // --- END DEBUG ---
                 if (metricValue !== undefined) {
                     processMetric(metricRule, metricValue, timestamp);
                 }
