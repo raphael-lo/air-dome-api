@@ -1,4 +1,5 @@
 import db from '../services/databaseService';
+import * as sqlite3 from 'sqlite3';
 
 export interface Section {
   id?: number;
@@ -25,7 +26,7 @@ export const getSections = () => {
           id: row.id,
           name: row.name,
           name_tc: row.name_tc,
-          item_order: row.item_order,
+          item_order: row.item_order ?? 0, // Convert null to 0
         }));
         resolve(sections);
       }
@@ -148,15 +149,17 @@ export const updateSectionItemOrder = (items: SectionItem[]) => {
 export const updateSectionOrder = (sections: { id: number, item_order: number }[]) => {
   return new Promise<void>((resolve, reject) => {
     db.serialize(() => {
-      db.run('BEGIN TRANSACTION', (err) => {
-        if (err) return reject(err);
+      db.run('BEGIN TRANSACTION', (err: Error | null) => {
+        if (err) {
+          return reject(err);
+        }
 
         const stmt = db.prepare('UPDATE sections SET item_order = ? WHERE id = ?');
         let completed = 0;
         const total = sections.length;
 
         if (total === 0) {
-          db.run('COMMIT', (err) => {
+          db.run('COMMIT', (err: Error | null) => {
             if (err) { db.run('ROLLBACK'); return reject(err); }
             resolve();
           });
@@ -164,7 +167,7 @@ export const updateSectionOrder = (sections: { id: number, item_order: number }[
         }
 
         for (const section of sections) {
-          stmt.run(section.item_order, section.id, function(err: Error | null) {
+          stmt.run(section.item_order, section.id, function(this: sqlite3.RunResult, err: Error | null) {
             if (err) {
               db.run('ROLLBACK');
               return reject(err);
@@ -172,8 +175,11 @@ export const updateSectionOrder = (sections: { id: number, item_order: number }[
             completed++;
             if (completed === total) {
               stmt.finalize();
-              db.run('COMMIT', (err) => {
-                if (err) { db.run('ROLLBACK'); return reject(err); }
+              db.run('COMMIT', (err: Error | null) => {
+                if (err) {
+                  db.run('ROLLBACK');
+                  return reject(err);
+                }
                 resolve();
               });
             }
