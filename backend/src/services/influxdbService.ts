@@ -1,9 +1,9 @@
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
 
 const url = process.env.INFLUXDB_URL || 'http://localhost:8086';
-const token = 'my-super-secret-token';
-const org = 'my-org';
-const bucket = 'my-bucket';
+const token = process.env.INFLUXDB_TOKEN || 'my-super-secret-token';
+const org = process.env.INFLUXDB_ORG || 'my-org';
+const bucket = process.env.INFLUXDB_BUCKET || 'my-bucket';
 
 const influxDB = new InfluxDB({ url, token });
 const writeApi = influxDB.getWriteApi(org, bucket);
