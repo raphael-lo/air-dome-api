@@ -88,3 +88,13 @@ export const deleteAlertThreshold = (req: Request, res: Response) => {
     mqttClient.publish('air-dome/config/update', JSON.stringify({ type: 'thresholds' }));
   });
 };
+
+export const reloadConfig = (req: Request, res: Response) => {
+  try {
+    mqttClient.publish('air-dome/config/reload', ''); // Publish empty message to trigger reload
+    res.status(200).json({ message: 'Config reload triggered' });
+  } catch (error) {
+    console.error('Error triggering config reload:', error);
+    res.status(500).json({ message: 'Failed to trigger config reload' });
+  }
+};
