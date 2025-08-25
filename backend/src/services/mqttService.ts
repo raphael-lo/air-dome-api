@@ -8,6 +8,8 @@ import { StatusLevel, type AlertThreshold, type Metric } from '../types';
 // --- In-memory cache for metric rules and stats ---
 type MetricRule = Metric & { topic: string };
 let metricRules: MetricRule[] = [];
+let alertThresholds: AlertThreshold[] = [];
+let lastMetricStatus: Record<string, StatusLevel> = {};
 let connectedClients = 0;
 
 // Export stats for other modules to access
@@ -33,7 +35,7 @@ const getStatusForMetric = (value: number, threshold: AlertThreshold | undefined
   return StatusLevel.Ok;
 };
 
-const createAlert = (metric: Metric, severity: StatusLevel, value: number, unit?: string) => {
+const createAlert = (metric: Metric, severity: StatusLevel, value: number, unit?: string | null) => {
     const newAlert = {
         id: uuidv4(),
         site_id: '1', // Assuming a single site for now
@@ -74,12 +76,32 @@ const processMetric = (metricRule: MetricRule, value: any, timestamp: string) =>
     }
 
     // Write to InfluxDB using the unique device_id from the rule
-    writeMetric('sensor_data', metricRule.mqtt_param, value, { device_id: metricRule.device_id });
+    writeMetric('sensor_data', metricRule.mqtt_param, value, { device_id: metricRule.device_id, topic: metricRule.topic });
 
-    // Alerting logic remains similar, but uses the metricRule directly
-    // (Further logic for fetching thresholds based on the new rule structure would be needed here)
-    // For now, we broadcast the data for real-time UI updates
-    broadcast({ [metricRule.mqtt_param]: { value, status: StatusLevel.Ok, device_id: metricRule.device_id }, timestamp });
+    // Check for alert conditions
+    const threshold = alertThresholds.find(t => t.metric_id === metricRule.id);
+    const status = getStatusForMetric(value, threshold);
+    const metricKey = `${metricRule.topic}:${metricRule.device_id}:${metricRule.mqtt_param}`;
+    const lastStatus = lastMetricStatus[metricKey] || StatusLevel.Ok;
+
+    console.log(`Metric: ${metricKey}, Value: ${value}, Status: ${status}, Last Status: ${lastStatus}, Create Alert: ${severityOrder[status] > severityOrder[lastStatus]}`);
+
+    if (severityOrder[status] > severityOrder[lastStatus]) {
+        createAlert(metricRule, status, value, metricRule.unit);
+    }
+
+    lastMetricStatus[metricKey] = status;
+
+
+    // Broadcast the data for real-time UI updates
+    broadcast({
+        topic: metricRule.topic,
+        device_id: metricRule.device_id,
+        mqtt_param: metricRule.mqtt_param,
+        value,
+        status,
+        timestamp
+    });
 }
 
 const loadMetricRules = (): Promise<void> => {
@@ -91,6 +113,20 @@ const loadMetricRules = (): Promise<void> => {
       }
       metricRules = fetchedMetrics;
       console.log(`Loaded ${metricRules.length} metric rules into memory.`);
+      resolve();
+    });
+  });
+};
+
+const loadAlertThresholds = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM alert_thresholds', [], (err, fetchedThresholds: AlertThreshold[]) => {
+      if (err) {
+        console.error('Failed to fetch alert thresholds:', err);
+        return reject(err);
+      }
+      alertThresholds = fetchedThresholds;
+      console.log(`Loaded ${alertThresholds.length} alert thresholds into memory.`);
       resolve();
     });
   });
@@ -112,6 +148,7 @@ export const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
 mqttClient.on('connect', async () => {
   try {
     await loadMetricRules();
+    await loadAlertThresholds();
 
     // Subscribe to all topics. The logic will now be handled by our rule matcher.
     mqttClient.subscribe('#', (err) => {
@@ -152,10 +189,11 @@ mqttClient.on('connect', async () => {
         if (topic === RELOAD_RULES_TOPIC) {
             console.log('API triggered rule reload. Reloading metric rules from database...');
             loadMetricRules();
+            loadAlertThresholds();
             return;
         }
 
-        const timestamp = payload.timestamp ? new Date(parseInt(payload.timestamp)).toISOString() : new Date().toISOString();
+        const timestamp = new Date(Date.now()).toISOString();
 
         // Flexible matching logic
         const matchedRules = metricRules.filter(rule => {
