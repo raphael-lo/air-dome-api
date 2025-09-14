@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { querySensorData, queryHistoricalData } from '../services/influxdbService';
+import { influxDBService } from '../services/influxdbService';
 import { InfluxSensorData } from '../types/sensorData';
 import { authenticateToken } from '../middleware/auth';
 
@@ -8,17 +8,18 @@ const router = Router();
 router.get('/sensor-data', authenticateToken, async (req: Request, res: Response) => {
   try {
     const range = req.query.range as string || '-1h';
-    const data = await querySensorData(range) as InfluxSensorData[];
+    const data = await influxDBService.querySensorData(range) as InfluxSensorData[];
     res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: 'Error getting sensor data', error });
+  } catch (error: any) {
+    console.error("Error getting sensor data:", error);
+    res.status(500).json({ message: 'Error getting sensor data', error: error.message });
   }
 });
 
 router.get('/sensor-data/view', async (req: Request, res: Response) => {
     try {
         const range = req.query.range as string || '-1h';
-        const data = await querySensorData(range) as InfluxSensorData[];
+        const data = await influxDBService.querySensorData(range) as InfluxSensorData[];
         res.send(`
         <!DOCTYPE html>
         <html>
@@ -71,14 +72,15 @@ router.get('/sensor-data/history', authenticateToken, async (req: Request, res: 
     const fieldStr = field as string;
     if (fieldStr.includes(':')) {
         const [topic, device_id, mqtt_param] = fieldStr.split(':');
-        data = await queryHistoricalData(measurement as string, mqtt_param, range as string, topic, device_id);
+        data = await influxDBService.queryHistoricalData(measurement as string, mqtt_param, range as string, topic, device_id);
     } else {
-        data = await queryHistoricalData(measurement as string, field as string, range as string);
+        data = await influxDBService.queryHistoricalData(measurement as string, field as string, range as string);
     }
 
     res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: 'Error getting historical sensor data', error });
+  } catch (error: any) {
+    console.error("Error getting historical sensor data:", error);
+    res.status(500).json({ message: 'Error getting historical sensor data', error: error.message });
   }
 });
 
