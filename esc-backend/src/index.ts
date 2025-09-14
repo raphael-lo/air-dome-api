@@ -56,18 +56,7 @@ const main = async () => {
   app.use('/api', escDataRouter);
 
   app.get('/', (req: Request, res: Response) => {
-    res.send('Air Dome Backend is running!');
-  });
-
-  initializeWebSocket(server);
-
-  server.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
-};
-
-main();t('/', (req: Request, res: Response) => {
-    res.send('Air Dome Backend is running!');
+    res.send('ESC Backend is running!');
   });
 
   initializeWebSocket(server);
