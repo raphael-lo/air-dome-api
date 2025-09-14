@@ -128,6 +128,7 @@ if (!MQTT_BROKER_URL) {
 export const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
     username: process.env.MQTT_USERNAME,
     password: process.env.MQTT_PASSWORD,
+    clientId: `air-dome-backend-${crypto.randomBytes(4).toString('hex')}`,
 });
 
 mqttClient.on('connect', async () => {
