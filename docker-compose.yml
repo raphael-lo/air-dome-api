@@ -6,23 +6,45 @@ services:
     container_name: backend
     ports:
       - "3001:3001"
-    # Remove bind mounts for production
-    # volumes:
-    #   - ./backend:/usr/src/app
-    #   - /usr/src/app/node_modules
     depends_on:
       - influxdb
       - mqtt-broker
+      - postgres
     restart: always
     networks:
       - air-dome-net
     env_file:
-      - ./.env # Reference the .env file on the EC2 instance
+      - ./.env
     environment:
-      - PORT=3001 # Keep non-sensitive fixed values
-    volumes:
-      - air_dome_db_data:/usr/src/app/data # Mount the SQLite database directory
+      - PORT=3001
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     command: npm start
+
+  esc-backend:
+    build: ./esc-backend
+    container_name: esc-backend
+    ports:
+      - "3002:3002"
+    depends_on:
+      - influxdb
+      - mqtt-broker
+      - postgres
+    restart: always
+    networks:
+      - air-dome-net
+    env_file:
+      - ./.env
+    environment:
+      - PORT=3002
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
 
   influxdb:
     image: influxdb:2.7.1
@@ -32,8 +54,9 @@ services:
     volumes:
       - influxdb_data:/var/lib/influxdb2
     env_file:
-      - ./.env # Reference the .env file for backend and MQTT
+      - ./.env
     environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=${DOCKER_INFLUXDB_INIT_USERNAME}
       - DOCKER_INFLUXDB_INIT_PASSWORD=${DOCKER_INFLUXDB_INIT_PASSWORD}
       - DOCKER_INFLUXDB_INIT_ORG=${DOCKER_INFLUXDB_INIT_ORG}
@@ -51,9 +74,26 @@ services:
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/config:/mosquitto/config
     networks:
       - air-dome-net
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    networks:
+      - air-dome-net
+    env_file:
+      - ./.env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   nginx:
     image: nginx:latest
@@ -62,10 +102,11 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/air-dome.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt/:/etc/letsencrypt/:ro # Mount entire letsencrypt directory
+      - ./nginx/air-dome-esc.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt/:/etc/letsencrypt/:ro
     depends_on:
-      - backend # Ensure Nginx starts after backend
+      - backend
+      - esc-backend
     restart: always
     networks:
       - air-dome-net
@@ -74,7 +115,7 @@ volumes:
   influxdb_data:
   mosquitto_data:
   mosquitto_log:
-  air_dome_db_data: # Define the named volume for the SQLite database
+  postgres_data:
 
 networks:
   air-dome-net:

@@ -17,19 +17,12 @@ import sectionRouter from './routes/section';
 import domeMetricsRouter from './routes/domeMetrics';
 import statsRouter from './routes/stats'; // Add this line
 import './services/databaseService';
-import { initializeDatabase } from './init_db';
+
 import { initializeWebSocket } from './services/websocketService';
 import { authenticateToken } from './middleware/auth';
 
 const main = async () => {
-  // Ensure the database is initialized before starting anything else
-  try {
-    await initializeDatabase();
-    console.log('Database initialization complete.');
-  } catch (error) {
-    console.error('Failed to initialize database. Exiting.', error);
-    process.exit(1);
-  }
+  
 
   // Now that the DB is ready, we can safely start other services
   await import('./services/mqttService');

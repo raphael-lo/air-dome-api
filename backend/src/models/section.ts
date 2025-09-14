@@ -1,5 +1,4 @@
 import db from '../services/databaseService';
-import * as sqlite3 from 'sqlite3';
 
 export interface Section {
   id?: number;
@@ -16,176 +15,70 @@ export interface SectionItem {
   item_order: number;
 }
 
-export const getSections = () => {
-  return new Promise<Section[]>((resolve, reject) => {
-    db.all('SELECT *, name_tc FROM sections ORDER BY item_order', (err, rows: Section[]) => {
-      if (err) {
-        reject(err);
-      } else {
-        const sections: Section[] = rows.map(row => ({
-          id: row.id,
-          name: row.name,
-          name_tc: row.name_tc,
-          item_order: row.item_order ?? 0, // Convert null to 0
-        }));
-        resolve(sections);
-      }
-    });
-  });
+export const getSections = async (): Promise<Section[]> => {
+  const { rows } = await db.query('SELECT *, name_tc FROM sections ORDER BY item_order', []);
+  return rows.map(row => ({ ...row, item_order: row.item_order ?? 0 }));
 };
 
-export const createSection = (section: { name: string, name_tc?: string, item_order: number }) => {
-  return new Promise<Section>((resolve, reject) => {
-    db.run('INSERT INTO sections (name, name_tc, item_order) VALUES (?, ?, ?)', [section.name, section.name_tc, section.item_order], function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ id: this.lastID, ...section });
-      }
-    });
-  });
+export const createSection = async (section: { name: string, name_tc?: string, item_order: number }): Promise<Section> => {
+  const { rows } = await db.query('INSERT INTO sections (name, name_tc, item_order) VALUES ($1, $2, $3) RETURNING *', [section.name, section.name_tc, section.item_order]);
+  return rows[0];
 };
 
-export const updateSection = (id: number, section: { name: string, name_tc?: string, item_order: number }) => {
-  return new Promise<Section>((resolve, reject) => {
-    db.run('UPDATE sections SET name = ?, name_tc = ?, item_order = ? WHERE id = ?', [section.name, section.name_tc, section.item_order, id], function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ id, ...section });
-      }
-    });
-  });
+export const updateSection = async (id: number, section: { name: string, name_tc?: string, item_order: number }): Promise<Section> => {
+  const { rows } = await db.query('UPDATE sections SET name = $1, name_tc = $2, item_order = $3 WHERE id = $4 RETURNING *', [section.name, section.name_tc, section.item_order, id]);
+  return rows[0];
 };
 
-export const deleteSection = (id: number) => {
-  return new Promise<void>((resolve, reject) => {
-    db.run('DELETE FROM sections WHERE id = ?', [id], function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+export const deleteSection = async (id: number): Promise<void> => {
+  await db.query('DELETE FROM sections WHERE id = $1', [id]);
 };
 
-export const getSectionItems = (sectionId: number) => {
-  return new Promise<SectionItem[]>((resolve, reject) => {
-    db.all('SELECT * FROM section_items WHERE section_id = ? ORDER BY item_order', [sectionId], (err, rows: SectionItem[]) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
+export const getSectionItems = async (sectionId: number): Promise<SectionItem[]> => {
+  const { rows } = await db.query('SELECT * FROM section_items WHERE section_id = $1 ORDER BY item_order', [sectionId]);
+  return rows;
 };
 
-export const addSectionItem = (item: Omit<SectionItem, 'id'>) => {
-  return new Promise<SectionItem>((resolve, reject) => {
-    db.run('INSERT OR IGNORE INTO section_items (section_id, item_id, item_type, item_order) VALUES (?, ?, ?, ?)', 
-    [item.section_id, item.item_id, item.item_type, item.item_order], function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ id: this.lastID, ...item });
-      }
-    });
-  });
+export const addSectionItem = async (item: Omit<SectionItem, 'id'>): Promise<SectionItem> => {
+  const { rows } = await db.query('INSERT INTO section_items (section_id, item_id, item_type, item_order) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING *', 
+  [item.section_id, item.item_id, item.item_type, item.item_order]);
+  return rows[0];
 };
 
-export const removeSectionItem = (id: number) => {
-  return new Promise<void>((resolve, reject) => {
-    db.run('DELETE FROM section_items WHERE id = ?', [id], function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+export const removeSectionItem = async (id: number): Promise<void> => {
+  await db.query('DELETE FROM section_items WHERE id = $1', [id]);
 };
 
-export const updateSectionItemOrder = (items: SectionItem[]) => {
-  return new Promise<void>((resolve, reject) => {
-    db.serialize(() => {
-      db.run('BEGIN TRANSACTION', (err: Error | null) => {
-        if (err) return reject(err);
-
-        const stmt = db.prepare('UPDATE section_items SET item_order = ? WHERE id = ?');
-        let completed = 0;
-        const total = items.length;
-
-        if (total === 0) {
-          db.run('COMMIT', (err: Error | null) => {
-            if (err) { db.run('ROLLBACK'); return reject(err); }
-            resolve();
-          });
-          return;
-        }
-
-        for (const item of items) {
-          stmt.run(item.item_order, item.id, function(err: Error | null) {
-            if (err) {
-              db.run('ROLLBACK');
-              return reject(err);
-            }
-            completed++;
-            if (completed === total) {
-              stmt.finalize();
-              db.run('COMMIT', (err: Error | null) => {
-                if (err) { db.run('ROLLBACK'); return reject(err); }
-                resolve();
-              });
-            }
-          });
-        }
-      });
-    });
-  });
+export const updateSectionItemOrder = async (items: SectionItem[]) => {
+  if (items.length === 0) return;
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    for (const item of items) {
+      await client.query('UPDATE section_items SET item_order = $1 WHERE id = $2', [item.item_order, item.id]);
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
 };
 
-export const updateSectionOrder = (sections: { id: number, item_order: number }[]) => {
-  return new Promise<void>((resolve, reject) => {
-    db.serialize(() => {
-      db.run('BEGIN TRANSACTION', (err: Error | null) => {
-        if (err) {
-          return reject(err);
-        }
-
-        const stmt = db.prepare('UPDATE sections SET item_order = ? WHERE id = ?');
-        let completed = 0;
-        const total = sections.length;
-
-        if (total === 0) {
-          db.run('COMMIT', (err: Error | null) => {
-            if (err) { db.run('ROLLBACK'); return reject(err); }
-            resolve();
-          });
-          return;
-        }
-
-        for (const section of sections) {
-          stmt.run(section.item_order, section.id, function(this: sqlite3.RunResult, err: Error | null) {
-            if (err) {
-              db.run('ROLLBACK');
-              return reject(err);
-            }
-            completed++;
-            if (completed === total) {
-              stmt.finalize();
-              db.run('COMMIT', (err: Error | null) => {
-                if (err) {
-                  db.run('ROLLBACK');
-                  return reject(err);
-                }
-                resolve();
-              });
-            }
-          });
-        }
-      });
-    });
-  });
+export const updateSectionOrder = async (sections: { id: number, item_order: number }[]) => {
+  if (sections.length === 0) return;
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    for (const section of sections) {
+      await client.query('UPDATE sections SET item_order = $1 WHERE id = $2', [section.item_order, section.id]);
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
 };
