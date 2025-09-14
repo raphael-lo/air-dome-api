@@ -1,4 +1,5 @@
 import mqtt from 'mqtt';
+import crypto from 'node:crypto';
 import { writeMetric } from './influxdbService';
 import { broadcast } from './websocketService';
 import db from './databaseService';

@@ -1,4 +1,5 @@
 import mqtt from 'mqtt';
+import crypto from 'node:crypto';
 import { influxDBService } from './influxdbService'; // Use the exported instance
 import { broadcast } from './websocketService';
 import db from './databaseService';
