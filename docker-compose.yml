@@ -66,7 +66,7 @@ services:
       - air-dome-net
 
   mqtt-broker:
-    image: eclipse-mosquitto:2.0.15
+    build: ./mosquitto
     container_name: mosquitto
     ports:
       - "1883:1883"
@@ -74,7 +74,6 @@ services:
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
-      - ./mosquitto/config:/mosquitto/config
     networks:
       - air-dome-net
 
