@@ -8,18 +8,26 @@ RUN npm ci
 
 COPY . .
 
-# Debugging step: Print the contents of init.sql to the build log
-RUN echo "--- DEBUG: Contents of init.sql ---" && cat src/config/init.sql && echo "--- END DEBUG ---"
-
 RUN npm run build
 
 FROM node:18-alpine AS runner
 
 WORKDIR /usr/src/app
 
+# Install netcat for the entrypoint script
+RUN apk add --no-cache netcat-openbsd
+
 COPY package*.json ./
 
 RUN npm ci --omit=dev
 
 COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/src/config ./src/config
+
+# Copy and set up the entrypoint script
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+# The default command to be executed by the entrypoint
+CMD ["npm", "start"]
