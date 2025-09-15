@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build-migrate": "tsc migration.ts --outDir dist-migrate",
+    "build-migrate": "tsc migration.ts --outDir dist-migrate --module es2020",
     "migrate": "node dist-migrate/migration.js"
   },
   "dependencies": {
