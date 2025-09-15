@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build-migrate": "tsc migration.ts --outDir dist-migrate",
-    "migrate": "node dist-migrate/migration.js"
+    "build-migrate": "tsc migration.ts --outFile dist-migrate/migration.cjs",
+    "migrate": "node dist-migrate/migration.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
