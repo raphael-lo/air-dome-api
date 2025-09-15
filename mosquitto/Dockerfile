@@ -15,7 +15,7 @@ RUN echo "${MQTT_USER}:${MQTT_PASSWORD}" > /tmp/passwordfile.txt && \
     rm -f /tmp/passwordfile.txt
 
 # Copy the main configuration file
-COPY mosquitto.conf /mosquitto/config/mosquitto.conf
+COPY config/mosquitto.conf /mosquitto/config/mosquitto.conf
 
 # The new mosquitto.conf should point to this password file
 # We also need to explicitly set the user to mosquitto for security
