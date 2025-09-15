@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build-migrate": "tsc migration.ts --outFile dist-migrate/migration.cjs",
+    "build-migrate": "tsc migration.ts --outDir dist-migrate --module commonjs && mv dist-migrate/migration.js dist-migrate/migration.cjs",
     "migrate": "node dist-migrate/migration.cjs"
   },
   "dependencies": {
