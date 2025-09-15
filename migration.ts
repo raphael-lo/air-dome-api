@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import sqlite3 from 'sqlite3';
 import dotenv from 'dotenv';
-import fs from 'fs';
+import * as fs from 'fs';
 
 dotenv.config();
 
