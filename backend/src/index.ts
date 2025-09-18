@@ -15,6 +15,8 @@ import metricRouter from './routes/metric';
 import metricGroupRouter from './routes/metricGroup';
 import sectionRouter from './routes/section';
 import domeMetricsRouter from './routes/domeMetrics';
+import siteRouter from './routes/site';
+import userSiteRouter from './routes/userSite';
 import statsRouter from './routes/stats'; // Add this line
 import './services/databaseService';
 
@@ -51,6 +53,8 @@ const main = async () => {
   app.use('/api', metricGroupRouter);
   app.use('/api', sectionRouter);
   app.use('/api', domeMetricsRouter);
+  app.use('/api', siteRouter);
+  app.use('/api', userSiteRouter);
 
   app.get('/', (req: Request, res: Response) => {
     res.send('Air Dome Backend is running!');

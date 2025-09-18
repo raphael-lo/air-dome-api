@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import * as sectionModel from '../models/section';
 
 export const createSection = async (req: Request, res: Response) => {
+    const { siteId } = req.params;
     try {
-        const section = await sectionModel.createSection(req.body);
+        const section = await sectionModel.createSection({ ...req.body, site_id: siteId });
         res.status(201).json(section);
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -12,8 +13,9 @@ export const createSection = async (req: Request, res: Response) => {
 };
 
 export const getSections = async (req: Request, res: Response) => {
+    const { siteId } = req.params;
     try {
-        const sections = await sectionModel.getSections();
+        const sections = await sectionModel.getSections(siteId);
         res.json(sections);
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -22,9 +24,9 @@ export const getSections = async (req: Request, res: Response) => {
 };
 
 export const updateSection = async (req: Request, res: Response) => {
-    console.log("1");
+    const { siteId, id } = req.params;
     try {
-        const section = await sectionModel.updateSection(Number(req.params.id), req.body);
+        const section = await sectionModel.updateSection(Number(id), { ...req.body, site_id: siteId });
         res.json(section);
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -33,8 +35,9 @@ export const updateSection = async (req: Request, res: Response) => {
 };
 
 export const deleteSection = async (req: Request, res: Response) => {
+    const { siteId, id } = req.params;
     try {
-        await sectionModel.deleteSection(Number(req.params.id));
+        await sectionModel.deleteSection(Number(id), siteId);
         res.status(204).send();
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -43,8 +46,9 @@ export const deleteSection = async (req: Request, res: Response) => {
 };
 
 export const getSectionItems = async (req: Request, res: Response) => {
+    const { siteId, id } = req.params;
     try {
-        const items = await sectionModel.getSectionItems(Number(req.params.id));
+        const items = await sectionModel.getSectionItems(Number(id), siteId);
         res.json(items);
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -53,10 +57,11 @@ export const getSectionItems = async (req: Request, res: Response) => {
 };
 
 export const addSectionItem = async (req: Request, res: Response) => {
+    const { siteId, id } = req.params;
     try {
-        const sectionId = Number(req.params.id);
+        const sectionId = Number(id);
         const { item_id, item_type, item_order } = req.body;
-        const newItem = { section_id: sectionId, item_id, item_type, item_order };
+        const newItem = { section_id: sectionId, item_id, item_type, item_order, site_id: siteId };
         const item = await sectionModel.addSectionItem(newItem);
         res.status(201).json(item);
     } catch (error: any) {
@@ -66,8 +71,9 @@ export const addSectionItem = async (req: Request, res: Response) => {
 };
 
 export const removeSectionItem = async (req: Request, res: Response) => {
+    const { siteId, itemId } = req.params;
     try {
-        await sectionModel.removeSectionItem(Number(req.params.itemId));
+        await sectionModel.removeSectionItem(Number(itemId), siteId);
         res.status(204).send();
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -76,8 +82,9 @@ export const removeSectionItem = async (req: Request, res: Response) => {
 };
 
 export const updateSectionItemOrder = async (req: Request, res: Response) => {
+    const { siteId } = req.params;
     try {
-        await sectionModel.updateSectionItemOrder(req.body);
+        await sectionModel.updateSectionItemOrder(req.body, siteId);
         res.status(204).send();
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -86,8 +93,9 @@ export const updateSectionItemOrder = async (req: Request, res: Response) => {
 };
 
 export const updateSectionOrder = async (req: Request, res: Response) => {
+    const { siteId } = req.params;
     try {
-        await sectionModel.updateSectionOrder(req.body);
+        await sectionModel.updateSectionOrder(req.body, siteId);
         res.status(204).send();
     } catch (error: any) {
         console.error("Error in controller:", error);

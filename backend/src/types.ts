@@ -1,4 +1,4 @@
-export type View = 'alert_settings' | 'dashboard' | 'alerts' | 'ventilation' | 'lighting' | 'emergency' | 'reports' | 'settings' | 'users' | 'register' | 'metrics';
+export type View = 'alert_settings' | 'dashboard' | 'alerts' | 'ventilation' | 'lighting' | 'emergency' | 'reports' | 'settings' | 'users' | 'register' | 'metrics' | 'site_settings';
 
 export type Language = 'en' | 'zh';
 
@@ -6,7 +6,8 @@ export type Theme = 'light' | 'dark';
 
 export interface Site {
   id: string;
-  nameKey: string;
+  name: string;
+  name_tc: string;
 }
 
 export enum StatusLevel {
@@ -68,6 +69,7 @@ export interface Alert {
 
 export interface FanSet {
   id: string;
+  site_id: string;
   name: string;
   status: 'on' | 'off';
   mode: 'auto' | 'manual';
@@ -76,20 +78,24 @@ export interface FanSet {
 }
 
 export interface LightingState {
+    site_id: string;
     lights_on: boolean;
     brightness: number;
 }
 
 export interface User {
-  id: string;
+  id?: number;
   username: string;
-  role: 'Admin' | 'Operator' | 'Viewer';
-  status: 'active' | 'disabled';
-  created_at: string;
+  password: string;
+  role?: 'Admin' | 'Operator' | 'Viewer';
+  sites?: string[];
+  status?: 'active' | 'disabled';
+  created_at?: string;
 }
 
 export interface Metric {
   id?: number;
+  site_id: string;
   topic?: string | null;
   device_param?: string | null;      // The key for the device ID in the payload (e.g., 'deviceID')
   device_id?: string | null;          // The value of the device ID (e.g., 'external-sensor')
@@ -104,6 +110,7 @@ export interface Metric {
 
 export interface MetricGroup {
   id?: number;
+  site_id: string;
   name: string;
   name_tc?: string; // Added
   icon: string;
@@ -113,17 +120,21 @@ export interface MetricGroup {
   metric2_id?: number;
   metric2_display_name?: string;
   metric2_display_name_tc?: string; // Added
+  metrics: Metric[];
 }
 
 export interface Section {
   id?: number;
+  site_id: string;
   name: string;
   name_tc?: string;
   item_order: number | null;
+  items: (Metric | MetricGroup)[];
 }
 
 export interface SectionItem {
   id?: number;
+  site_id: string;
   section_id: number;
   item_id: number;
   item_type: 'metric' | 'group';

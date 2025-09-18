@@ -14,6 +14,8 @@ FROM node:18-alpine AS runner
 
 WORKDIR /usr/src/app
 
+COPY migration ./migration
+
 # Install netcat for the entrypoint script
 RUN apk add --no-cache netcat-openbsd
 

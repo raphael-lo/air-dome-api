@@ -1,0 +1,27 @@
+import db from '../services/databaseService';
+import { Site } from '../types';
+
+export const createSiteInDb = async (id: string, name: string, name_tc: string): Promise<Site> => {
+  const { rows } = await db.query('INSERT INTO sites (id, name, name_tc) VALUES ($1, $2, $3) RETURNING *', [id, name, name_tc]);
+  return rows[0];
+};
+
+export const getSitesFromDb = async (): Promise<Site[]> => {
+  const { rows } = await db.query('SELECT * FROM sites', []);
+  return rows;
+};
+
+export const getSiteByIdFromDb = async (id: string): Promise<Site | undefined> => {
+  const { rows } = await db.query('SELECT * FROM sites WHERE id = $1', [id]);
+  return rows[0];
+};
+
+export const updateSiteInDb = async (id: string, name: string, name_tc: string): Promise<Site | null> => {
+  const { rows } = await db.query('UPDATE sites SET name = $1, name_tc = $2 WHERE id = $3 RETURNING *', [name, name_tc, id]);
+  return rows[0] || null;
+};
+
+export const deleteSiteInDb = async (id: string): Promise<number> => {
+  const { rowCount } = await db.query('DELETE FROM sites WHERE id = $1', [id]);
+  return rowCount ?? 0;
+};

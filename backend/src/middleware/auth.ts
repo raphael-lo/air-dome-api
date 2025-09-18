@@ -30,3 +30,20 @@ export const authorizeRole = (roles: Array<'Admin' | 'Operator' | 'Viewer'>) => 
     next();
   };
 };
+
+export const authorizeSiteAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const siteId = req.params.siteId || req.query.siteId;
+  if (!siteId) {
+    return res.status(400).json({ message: 'Site ID is required' });
+  }
+
+  if (req.user && req.user.role === 'Admin') {
+    return next();
+  }
+
+  if (req.user && req.user.sites && req.user.sites.includes(siteId as string)) {
+    return next();
+  }
+
+  return res.status(403).json({ message: 'Forbidden: You do not have access to this site' });
+};

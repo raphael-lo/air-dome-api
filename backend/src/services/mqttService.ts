@@ -39,7 +39,7 @@ const getStatusForMetric = (value: number, threshold: AlertThreshold | undefined
 const createAlert = async (metric: Metric, severity: StatusLevel, value: number, unit?: string | null) => {
     const newAlert = {
         id: uuidv4(),
-        site_id: '1', // Assuming a single site for now
+        site_id: metric.site_id,
         parameter_key: metric.display_name,
         message_key: 'alert_threshold_exceeded',
         message_params: {

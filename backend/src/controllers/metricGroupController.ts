@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import * as metricGroupModel from '../models/metricGroup';
 
 export const createMetricGroup = async (req: Request, res: Response) => {
+    const { siteId } = req.params;
     try {
-        const group = await metricGroupModel.createMetricGroup(req.body);
+        const group = await metricGroupModel.createMetricGroup({ ...req.body, site_id: siteId });
         res.status(201).json(group);
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -12,8 +13,9 @@ export const createMetricGroup = async (req: Request, res: Response) => {
 };
 
 export const getMetricGroups = async (req: Request, res: Response) => {
+    const { siteId } = req.params;
     try {
-        const groups = await metricGroupModel.getMetricGroups();
+        const groups = await metricGroupModel.getMetricGroups(siteId);
         res.json(groups);
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -22,8 +24,9 @@ export const getMetricGroups = async (req: Request, res: Response) => {
 };
 
 export const updateMetricGroup = async (req: Request, res: Response) => {
+    const { siteId, id } = req.params;
     try {
-        const group = await metricGroupModel.updateMetricGroup(Number(req.params.id), req.body);
+        const group = await metricGroupModel.updateMetricGroup(Number(id), { ...req.body, site_id: siteId });
         res.json(group);
     } catch (error: any) {
         console.error("Error in controller:", error);
@@ -32,8 +35,9 @@ export const updateMetricGroup = async (req: Request, res: Response) => {
 };
 
 export const deleteMetricGroup = async (req: Request, res: Response) => {
+    const { siteId, id } = req.params;
     try {
-        await metricGroupModel.deleteMetricGroup(Number(req.params.id));
+        await metricGroupModel.deleteMetricGroup(Number(id), siteId);
         res.status(204).send();
     } catch (error: any) {
         console.error("Error in controller:", error);

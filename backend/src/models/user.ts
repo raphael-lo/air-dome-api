@@ -3,6 +3,7 @@ export interface User {
   username: string;
   password: string;
   role?: 'Admin' | 'Operator' | 'Viewer';
+  sites?: string[];
   status?: 'active' | 'disabled';
   created_at?: string;
 }
