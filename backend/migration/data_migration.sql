@@ -1,6 +1,7 @@
 -- Data Migration Script
 
 -- 1. Create a default site
+ALTER TABLE sites ADD COLUMN name_tc TEXT;
 INSERT INTO sites (id, name, name_tc) VALUES ('default_site', 'Default Site', '預設站點') ON CONFLICT (id) DO NOTHING;
 
 -- 2. Update existing tables with the default site_id
