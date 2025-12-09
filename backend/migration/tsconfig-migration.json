@@ -1,6 +1,10 @@
 {
-  "extends": "../backend/tsconfig.json",
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs"
-  }
+    "rootDir": "."
+  },
+  "include": [
+    "src/**/*.ts",
+    "migration/*.ts"
+  ]
 }

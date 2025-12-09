@@ -1,4 +1,4 @@
-import db from '../dist/services/databaseService';
+import db from '../src/services/databaseService';
 
 const migrate = async () => {
   const client = await db.getClient();

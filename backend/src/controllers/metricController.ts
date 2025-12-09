@@ -14,8 +14,9 @@ export const createMetric = async (req: Request, res: Response) => {
 
 export const getMetrics = async (req: Request, res: Response) => {
     const { siteId } = req.params;
+    const { source } = req.query as { source?: 'air-dome' | 'esc' };
     try {
-        const metrics = await metricModel.getMetrics(siteId);
+        const metrics = await metricModel.getMetrics(siteId, source);
         res.json(metrics);
     } catch (error: any) {
         console.error("Error fetching metrics:", error);

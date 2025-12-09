@@ -36,7 +36,7 @@ const getStatusForMetric = (value: number, threshold: AlertThreshold | undefined
   return StatusLevel.Ok;
 };
 
-const createAlert = async (metric: Metric, severity: StatusLevel, value: number, unit?: string | null) => {
+const createAlert = async (metric: Metric, severity: StatusLevel, value: number, unit: string = '') => {
     const newAlert = {
         id: uuidv4(),
         site_id: metric.site_id,
@@ -73,7 +73,7 @@ const processMetric = (metricRule: MetricRule, value: any, timestamp: string) =>
         return;
     }
 
-    writeMetric('sensor_data', metricRule.mqtt_param, value, { device_id: metricRule.device_id, topic: metricRule.topic });
+    writeMetric('sensor_data', metricRule.mqtt_param || '', value, { device_id: metricRule.device_id, topic: metricRule.topic });
 
     const threshold = alertThresholds.find(t => t.metric_id === metricRule.id);
     const status = getStatusForMetric(value, threshold);
@@ -81,7 +81,8 @@ const processMetric = (metricRule: MetricRule, value: any, timestamp: string) =>
     const lastStatus = lastMetricStatus[metricKey] || StatusLevel.Ok;
 
     if (severityOrder[status] > severityOrder[lastStatus]) {
-        createAlert(metricRule, status, value, metricRule.unit);
+        const alertUnit = metricRule.unit || '';
+        createAlert(metricRule, status, value, alertUnit);
     }
 
     lastMetricStatus[metricKey] = status;
@@ -194,12 +195,12 @@ mqttClient.on('connect', async () => {
         });
 
         if (matchedRules.length > 0) {
-            const deviceId = matchedRules[0].device_id;
-
             matchedRules.forEach(metricRule => {
-                const metricValue = payload[metricRule.mqtt_param];
-                if (metricValue !== undefined) {
-                    processMetric(metricRule, metricValue, timestamp);
+                if (metricRule.mqtt_param) { // Ensure mqtt_param is not null
+                    const metricValue = payload[metricRule.mqtt_param];
+                    if (metricValue !== undefined) {
+                        processMetric(metricRule, metricValue, timestamp);
+                    }
                 }
             });
         }

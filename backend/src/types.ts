@@ -99,11 +99,14 @@ export interface Metric {
   topic?: string | null;
   device_param?: string | null;      // The key for the device ID in the payload (e.g., 'deviceID')
   device_id?: string | null;          // The value of the device ID (e.g., 'external-sensor')
-  mqtt_param: string;               // The key for the metric value in the payload (e.g., 'temperature')
+  mqtt_param?: string | null;         // The key for the metric value in the payload (e.g., 'temperature')
   display_name: string;
   display_name_tc?: string;
   icon?: string | null;
   unit?: string | null;
+  source?: 'air-dome' | 'esc';
+  channel?: number | null;
+  data_type?: 'YX' | 'YC' | 'Setting' | null;
   itemId?: number;
   section_item_id?: number;
 }

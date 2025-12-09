@@ -18,13 +18,14 @@ import domeMetricsRouter from './routes/domeMetrics';
 import siteRouter from './routes/site';
 import userSiteRouter from './routes/userSite';
 import statsRouter from './routes/stats'; // Add this line
+import settingsRouter from './routes/settings';
 import './services/databaseService';
 
 import { initializeWebSocket } from './services/websocketService';
 import { authenticateToken } from './middleware/auth';
 
 const main = async () => {
-  
+
 
   // Now that the DB is ready, we can safely start other services
   await import('./services/mqttService');
@@ -35,6 +36,7 @@ const main = async () => {
 
   const corsOptions = {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     optionsSuccessStatus: 200
   };
 
@@ -49,6 +51,7 @@ const main = async () => {
   app.use('/api', authenticateToken, lightingControlRouter);
   app.use('/api', authenticateToken, alertThresholdsRouter);
   app.use('/api', authenticateToken, statsRouter); // Add this line
+  app.use('/api/settings', authenticateToken, settingsRouter);
   app.use('/api', metricRouter);
   app.use('/api', metricGroupRouter);
   app.use('/api', sectionRouter);

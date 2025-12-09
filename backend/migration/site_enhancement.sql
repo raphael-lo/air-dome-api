@@ -2,6 +2,7 @@
 CREATE TABLE sites (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  name_tc TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

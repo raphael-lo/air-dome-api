@@ -12,12 +12,20 @@ CREATE TABLE IF NOT EXISTS metrics (
   topic TEXT,
   device_param TEXT,            -- The key for the device ID in the payload (e.g., 'deviceID')
   device_id TEXT,               -- The value of the device ID in the payload (e.g., 'external-sensor')
-  mqtt_param TEXT NOT NULL,     -- The key for the metric value in the payload (e.g., 'temperature')
+  mqtt_param TEXT,              -- The key for the metric value in the payload (e.g., 'temperature')
   display_name TEXT NOT NULL,
   display_name_tc TEXT,
   icon TEXT,
   unit TEXT,
-  UNIQUE (topic, device_id, mqtt_param)
+  source VARCHAR(255) DEFAULT 'air-dome',
+  channel INTEGER,
+  data_type VARCHAR(50),
+  UNIQUE (topic, device_id, mqtt_param, channel) -- updated unique constraint
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key VARCHAR(255) PRIMARY KEY,
+    value TEXT
 );
 
 CREATE TABLE IF NOT EXISTS metric_groups (
@@ -89,6 +97,8 @@ CREATE TABLE IF NOT EXISTS alert_thresholds (
 );
 
 -- Seed Data --
+INSERT INTO settings (key, value) SELECT 'show_esc_module', 'true' WHERE NOT EXISTS (SELECT 1 FROM settings WHERE key = 'show_esc_module');
+
 INSERT INTO users (username, password, role, status, created_at) 
 SELECT 'admin', '$2b$10$wydOzraZ12j.hmkQnTeumOKGxj2eR/I3zjN2JSL0sxDqdiFIfP1WS', 'Admin', 'active', strftime('%Y-%m-%dT%H:%M:%fZ', 'now') -- password
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
