@@ -83,7 +83,7 @@ export const getDomeMetricsStructureFromDb = async (siteId: string): Promise<Sec
     if (row.item_id) { // Only if there's an item associated with the section
       if (row.item_type === 'metric') {
         // Direct Metric
-        currentSection.items.push({
+        currentSection.items!.push({
           id: row.metric_id,
           site_id: siteId,
           topic: row.topic,

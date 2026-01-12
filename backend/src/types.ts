@@ -1,13 +1,89 @@
-export type View = 'alert_settings' | 'dashboard' | 'alerts' | 'ventilation' | 'lighting' | 'emergency' | 'reports' | 'settings' | 'users' | 'register' | 'metrics' | 'site_settings';
+import { Request } from 'express';
 
-export type Language = 'en' | 'zh';
+export interface User {
+  id: number;
+  username: string;
+  role: 'Admin' | 'Operator' | 'Viewer';
+  status: 'active' | 'inactive';
+  created_at: string;
+  sites?: Site[];
+}
 
-export type Theme = 'light' | 'dark';
+export interface Metric {
+  id?: number;
+  site_id: string; // Foreign key
+  topic?: string;
+  device_param?: string;
+  device_id?: string;
+  mqtt_param?: string;
+  display_name: string;
+  display_name_tc?: string;
+  icon?: string;
+  unit?: string;
+  source?: 'air-dome' | 'esc';
+  channel?: number;
+  data_type?: string;
+}
+
+export interface MetricGroup {
+  id?: number;
+  site_id: string; // Foreign key
+  name: string;
+  name_tc?: string;
+  icon?: string;
+  metric1_id: number;
+  metric1_display_name?: string;
+  metric1_display_name_tc?: string;
+  metric2_id: number;
+  metric2_display_name?: string;
+  metric2_display_name_tc?: string;
+  metrics?: Metric[]; // Virtual property for response structure
+}
+
+export interface Section {
+  id?: number;
+  site_id: string; // Foreign key
+  name: string;
+  name_tc?: string;
+  item_order: number;
+  items?: (Metric | MetricGroup)[]; // Virtual property for response structure
+}
+
+export interface SectionItem {
+  id: number;
+  section_id: number;
+  item_id: number; // Metric ID or Metric Group ID
+  item_type: 'metric' | 'group';
+  item_order: number;
+}
 
 export interface Site {
   id: string;
   name: string;
-  name_tc: string;
+  description?: string;
+  location?: string;
+  contact_person?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: User;
+}
+
+export interface AlertThreshold {
+  id: string;
+  site_id: string;
+  metric_id: number;
+  metric_name?: string;
+  min_warning: number | null;
+  max_warning: number | null;
+  min_alert: number | null;
+  max_alert: number | null;
+  display_name?: string;
+  display_name_tc?: string;
+  mqtt_param?: string;
 }
 
 export enum StatusLevel {
@@ -16,170 +92,74 @@ export enum StatusLevel {
   Danger = 'danger',
 }
 
-export interface SensorData {
-  id: number;
-  pressure: number;
-  temperature: number;
-  humidity: number;
-  windSpeed: number;
-  timestamp: string;
-}
-
-export interface AirDomeData {
-  internalPressure: { value: number; status: StatusLevel; history: number[] };
-  externalPressure: { value: number; status: StatusLevel; history: number[] };
-  fanSpeed: { value: number; status: StatusLevel; history: number[] };
-  airExchangeRate: { value: number; status: StatusLevel; history: number[] };
-  powerConsumption: { value: number; status: StatusLevel; history: number[] };
-  voltage: { value: number; status: StatusLevel; history: number[] };
-  current: { value: number; status: StatusLevel; history: number[] };
-  externalWindSpeed: { value: number; status: StatusLevel; history: number[] };
-  internalPM25: { value: number; status: StatusLevel; history: number[] };
-  externalPM25: { value: number; status: StatusLevel; history: number[] };
-  internalCO2: { value: number; status: StatusLevel; history: number[] };
-  externalCO2: { value: number; status: StatusLevel; history: number[] };
-  internalO2: { value: number; status: StatusLevel; history: number[] };
-  externalO2: { value: number; status: StatusLevel; history: number[] };
-  internalCO: { value: number; status: StatusLevel; history: number[] };
-  externalCO: { value: number; status: StatusLevel; history: number[] };
-  internalTemperature: { value: number; status: StatusLevel; history: number[] };
-  externalTemperature: { value: number; status: StatusLevel; history: number[] };
-  internalHumidity: { value: number; status: StatusLevel; history: number[] };
-  externalHumidity: { value: number; status: StatusLevel; history: number[] };
-  membraneHealth: { value: string; status: StatusLevel };
-  internalNoise: { value: number; status: StatusLevel; history: number[] };
-  externalNoise: { value: number; status: StatusLevel; history: number[] };
-  basePressure: { value: number; status: StatusLevel; history: number[] };
-  internalLux: { value: number; status: StatusLevel; history: number[] };
-  lightingStatus: { value: string; status: StatusLevel };
-  airShutterStatus: { value: string; status: StatusLevel };
-  timestamp: string; // Add this line
-}
-
-export interface Alert {
-  id: string;
-  site_id: string;
-  parameter_key: string; // Changed from 'parameter'
-  message_key: string;   // Changed from 'message'
-  message_params: Record<string, any>; // New field for message parameters
-  severity: StatusLevel;
-  timestamp: string;
-  status: 'active' | 'acknowledged' | 'resolved';
-}
-
 export interface FanSet {
   id: string;
-  site_id: string;
   name: string;
-  status: 'on' | 'off';
-  mode: 'auto' | 'manual';
+  status: string; // 'on', 'off'
+  mode: string;   // 'auto', 'manual'
   inflow: number;
   outflow: number;
 }
 
 export interface LightingState {
-    site_id: string;
-    lights_on: boolean;
-    brightness: number;
+  id: number;
+  lights_on: boolean;
+  brightness: number;
 }
 
-export interface User {
-  id?: number;
-  username: string;
-  password: string;
-  role?: 'Admin' | 'Operator' | 'Viewer';
-  sites?: string[];
-  status?: 'active' | 'disabled';
+// --- New Alert Rules Types ---
+
+export enum AlertOperator {
+  GREATER_THAN = '>',
+  LESS_THAN = '<',
+  EQUALS = '=',
+  GREATER_THAN_OR_EQUALS = '>=',
+  LESS_THAN_OR_EQUALS = '<=',
+}
+
+export enum AlertSeverity {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical',
+  INFO = 'info',
+}
+
+export interface AlertRule {
+  id: number;
+  site_id: string;
+  metric_id: number;
+  name: string;
+  operator: AlertOperator;
+  threshold: number;
+  severity: AlertSeverity;
+  active: boolean;
   created_at?: string;
+  updated_at?: string;
+  // Optional joined fields
+  metric_display_name?: string;
+  metric_display_name_tc?: string;
+  metric_mqtt_param?: string;
 }
 
-export interface Metric {
-  id?: number;
+export enum DerivedMetricOperator {
+  ADD = 'ADD',
+  SUBTRACT = 'SUBTRACT',
+  MULTIPLY = 'MULTIPLY',
+  DIVIDE = 'DIVIDE',
+}
+
+export interface DerivedMetricRule {
+  id: number;
   site_id: string;
-  topic?: string | null;
-  device_param?: string | null;      // The key for the device ID in the payload (e.g., 'deviceID')
-  device_id?: string | null;          // The value of the device ID (e.g., 'external-sensor')
-  mqtt_param?: string | null;         // The key for the metric value in the payload (e.g., 'temperature')
-  display_name: string;
-  display_name_tc?: string;
-  icon?: string | null;
-  unit?: string | null;
-  source?: 'air-dome' | 'esc';
-  channel?: number | null;
-  data_type?: 'YX' | 'YC' | 'Setting' | null;
-  itemId?: number;
-  section_item_id?: number;
-}
-
-export interface MetricGroup {
-  id?: number;
-  site_id: string;
-  name: string;
-  name_tc?: string; // Added
-  icon: string;
-  metric1_id?: number;
-  metric1_display_name?: string;
-  metric1_display_name_tc?: string; // Added
-  metric2_id?: number;
-  metric2_display_name?: string;
-  metric2_display_name_tc?: string; // Added
-  metrics: Metric[];
-}
-
-export interface Section {
-  id?: number;
-  site_id: string;
-  name: string;
-  name_tc?: string;
-  item_order: number | null;
-  items: (Metric | MetricGroup)[];
-}
-
-export interface SectionItem {
-  id?: number;
-  site_id: string;
-  section_id: number;
-  item_id: number;
-  item_type: 'metric' | 'group';
-  item_order: number;
-}
-
-export interface DomeMetric {
-  metric_id: number;
-  mqtt_param: string;
-  display_name: string;
-  device_id: string;
-  icon: string;
-}
-
-export interface DomeMetricGroup {
-  metric_group_id: number;
-  metric_group_name: string;
-  metrics: DomeMetric[];
-}
-
-export interface DomeSectionItem {
-  item_id: number;
-  item_type: 'metric' | 'group';
-  section_item_order: number;
-}
-
-export interface DomeSection {
-  section_id: number;
-  section_name: string;
-  section_order: number;
-  items: (DomeMetric | DomeMetricGroup)[];
-}
-
-export interface AlertThreshold {
-  id: string;
-  site_id: string;
-  metric_id: number;
-  min_warning: number | null;
-  max_warning: number | null;
-  min_alert: number | null;
-  max_alert: number | null;
-  // These are for display and are joined from the metrics table
-  mqtt_param?: string;
-  display_name?: string;
+  target_metric_id: number;
+  metric1_id: number;
+  metric2_id: number;
+  operator: DerivedMetricOperator;
+  active: boolean;
+  created_at?: string;
+  // Optional joined fields for UI
+  target_metric_name?: string;
+  metric1_name?: string;
+  metric2_name?: string;
 }
