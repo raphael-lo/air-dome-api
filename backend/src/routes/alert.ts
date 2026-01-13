@@ -8,6 +8,7 @@ const router = Router();
 // ... existing alert routes ...
 router.get('/alerts/:siteId', authenticateToken, authorizeSiteAccess, AlertController.getAlerts);
 router.put('/alerts/:siteId/:id/acknowledge', authenticateToken, authorizeSiteAccess, AlertController.acknowledgeAlert);
+router.put('/alerts/:siteId/acknowledge-all', authenticateToken, authorizeSiteAccess, AlertController.acknowledgeAllAlerts);
 
 
 // --- New Alert Rule Routes ---

@@ -73,6 +73,9 @@ const createAlert = async (metric: Metric, rule: AlertRule, value: number, unit:
   }
 };
 
+// NEW: Map to store the last calculated status by metric ID
+const metricIdToStatus: Record<number, StatusLevel> = {};
+
 const processMetric = (metricRule: MetricRule, value: any, timestamp: string) => {
   if (typeof value !== 'number') return;
 
@@ -90,10 +93,6 @@ const processMetric = (metricRule: MetricRule, value: any, timestamp: string) =>
     return;
   }
 
-  // Only write to InfluxDB if it's NOT a virtual/derived metric (source metrics have normal topics)
-  // Derived metrics might not need raw storage, or we can store them. 
-  // The migration inserted 'air-dome/virtual' as topic, which might not be valid for influx logic unless handled.
-  // For now, let's allow writing derived metrics to Influx too if topic exists.
   if (metricRule.topic !== 'air-dome/virtual') {
     writeMetric('sensor_data', metricRule.mqtt_param || '', value, { device_id: metricRule.device_id, topic: metricRule.topic });
   }
@@ -101,7 +100,7 @@ const processMetric = (metricRule: MetricRule, value: any, timestamp: string) =>
   // Filter rules for this metric
   const relevantRules = alertRules.filter(r => r.metric_id === metricRule.id && r.active && r.site_id === metricRule.site_id);
 
-  // Evaluate all rules
+  // Evaluate all rules (NATIVE Status)
   let maxSeverity: AlertSeverity | null = null;
   let triggeringRule: AlertRule | null = null;
 
@@ -114,27 +113,54 @@ const processMetric = (metricRule: MetricRule, value: any, timestamp: string) =>
     }
   }
 
-  const metricKey = `${metricRule.topic}:${metricRule.device_id}:${metricRule.mqtt_param}`;
-  // TODO: Determine a better way to map AlertSeverity to StatusLevel for the dashboard status dot
-  const currentStatus = maxSeverity ? (severityOrder[maxSeverity] >= 3 ? StatusLevel.Danger : StatusLevel.Warn) : StatusLevel.Ok;
+  // --- INHERITED Status Logic ---
+  // Check if this metric is a source for any active derived rules that are in critical state
+  let inheritedSeverity: AlertSeverity | null = null;
+  if (metricRule.id) {
+    // Find derived rules where this metric is a source
+    const parentRules = derivedRules.filter(r => r.active && (r.metric1_id === metricRule.id || r.metric2_id === metricRule.id));
 
-  // Simple logic: If we have a triggering rule and it's higher severity than before, or if it's a new critical state
-  // For now, let's just create an alert if ANY rule triggers and we haven't alerted for this recently? 
-  // Actually, following the Scaffolding logic: Just create the alert. De-duplication usually happens if there is already an ACTIVE alert for the same thing.
-  // For simplicity in this revamp, I will stick to the previous "State Change" logic but adapted.
+    for (const pRule of parentRules) {
+      // Get the target metric ID (the derived one)
+      const targetId = pRule.target_metric_id;
+      // Check its status
+      const targetStatus = metricIdToStatus[targetId];
+      if (targetStatus === StatusLevel.Danger) {
+        // If a parent is Danger, we inherit at least High severity (which maps to Danger)
+        if (inheritedSeverity === null || severityOrder[AlertSeverity.HIGH] > severityOrder[inheritedSeverity]) {
+          inheritedSeverity = AlertSeverity.HIGH;
+        }
+      } else if (targetStatus === StatusLevel.Warn) {
+        if (inheritedSeverity === null || severityOrder[AlertSeverity.MEDIUM] > severityOrder[inheritedSeverity]) {
+          inheritedSeverity = AlertSeverity.MEDIUM;
+        }
+      }
+    }
+  }
+
+  // Final Severity is Max(Native, Inherited)
+  let finalSeverity = maxSeverity;
+  if (inheritedSeverity) {
+    if (finalSeverity === null || severityOrder[inheritedSeverity] > severityOrder[finalSeverity]) {
+      finalSeverity = inheritedSeverity;
+    }
+  }
+
+  const metricKey = `${metricRule.topic}:${metricRule.device_id}:${metricRule.mqtt_param}`;
+  const currentStatus = finalSeverity ? (severityOrder[finalSeverity] >= 3 ? StatusLevel.Danger : StatusLevel.Warn) : StatusLevel.Ok;
+
+  // Update ID-based status map
+  if (metricRule.id) {
+    metricIdToStatus[metricRule.id] = currentStatus;
+  }
 
   const lastStatus = lastMetricStatus[metricKey] || StatusLevel.Ok;
 
-  // If we have a triggering rule, create an alert.
-  // Optimization: Check if an active alert for this rule exists? 
-  // For now, let's preserve the "only alert on state worsening" logic to avoid spam, or simplistic "if triggered".
-  // Let's go with: If there is a triggering rule, create an alert. (Maybe rate limit in future)
-
+  // Creating Alerts: Only create alert if NATIVE rule triggers. 
+  // We don't want to double-create alerts for the source metric just because it inherited status.
+  // The User will see the Derived Metric alert. The Source Metric visual change is just for UI context.
   if (triggeringRule) {
-    // To avoid spam, we could check if we just sent this alert. 
-    // But the previous logic was: if (severity > lastSeverity) -> Alert.
-    // Let's keep that.
-    if (severityOrder[triggeringRule.severity] > (lastStatus === StatusLevel.Ok ? 0 : (lastStatus === StatusLevel.Warn ? 1 : 2))) { // Rough mapping
+    if (severityOrder[triggeringRule.severity] > (lastStatus === StatusLevel.Ok ? 0 : (lastStatus === StatusLevel.Warn ? 1 : 2))) {
       createAlert(metricRule, triggeringRule, value, metricRule.unit || '');
     }
   }
@@ -151,14 +177,32 @@ const processMetric = (metricRule: MetricRule, value: any, timestamp: string) =>
   });
 
   // --- Dynamic Derived Metric Logic ---
-  // Find generic rules where this metric is an input (metric1 or metric2)
+  // Forward Propagation: If I am an input, trigger my targets
   if (metricRule.id) {
     const dependentRules = derivedRules.filter(r => r.active && (r.metric1_id === metricRule.id || r.metric2_id === metricRule.id));
-
     dependentRules.forEach(rule => {
       calculateAndProcessDynamicRule(rule);
     });
   }
+}
+
+// Function to force update inputs when a derived metric changes status
+const triggerReverseUpdate = (rule: DerivedMetricRule) => {
+  // We need to re-process metric1 and metric2 to pick up the new inherited status
+  const idsToUpdate = [rule.metric1_id, rule.metric2_id];
+
+  idsToUpdate.forEach(id => {
+    const metric = metricRules.find(m => m.id === id);
+    if (metric && metric.mqtt_param) {
+      const cachedValue = dataCache[metric.mqtt_param];
+      if (cachedValue !== undefined) {
+        // Re-run processMetric. 
+        // It will check 'metricIdToStatus' for the derived metric (which we just updated), 
+        // and assume the new inherited status.
+        processMetric(metric, cachedValue, new Date().toISOString());
+      }
+    }
+  });
 }
 
 const calculateAndProcessDynamicRule = (rule: DerivedMetricRule) => {
@@ -181,11 +225,17 @@ const calculateAndProcessDynamicRule = (rule: DerivedMetricRule) => {
 
     if (targetMetric) {
       const timestamp = new Date().toISOString();
+      const oldStatus = metricIdToStatus[targetMetric.id!] || StatusLevel.Ok;
+
       // Recursive call!
-      // Note: To prevent infinite loops, ensure derived metrics don't depend on themselves or form cycles.
-      // Simple recursive depth check or strict acyclic graph enforcement could be added if needed.
-      // For now, processMetric handles it.
       processMetric(targetMetric, result, timestamp);
+
+      const newStatus = metricIdToStatus[targetMetric.id!] || StatusLevel.Ok;
+
+      // Reverse Propagation: If status changed, update inputs
+      if (oldStatus !== newStatus) {
+        triggerReverseUpdate(rule);
+      }
     }
   }
 }
