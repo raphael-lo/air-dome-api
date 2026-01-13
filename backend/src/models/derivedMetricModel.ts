@@ -19,6 +19,12 @@ export const getDerivedMetricRules = async (siteId: string): Promise<DerivedMetr
     return rows as DerivedMetricRule[];
 };
 
+export const getDerivedMetricRuleById = async (siteId: string, id: number): Promise<DerivedMetricRule | null> => {
+    const query = `SELECT * FROM derived_metric_rules WHERE id = $1 AND site_id = $2`;
+    const { rows } = await db.query(query, [id, siteId]);
+    return rows[0] as DerivedMetricRule || null;
+};
+
 export const createDerivedMetricRule = async (
     siteId: string,
     target_metric_id: number,

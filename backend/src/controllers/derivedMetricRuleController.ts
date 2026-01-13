@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as DerivedMetricModel from '../models/derivedMetricModel';
 import { mqttClient } from '../services/mqttService';
-import { createMetric } from '../models/metric';
+import * as MetricModel from '../models/metric';
 
 export const getDerivedMetricRules = async (req: Request, res: Response) => {
     const { siteId } = req.params;
@@ -22,7 +22,7 @@ export const createDerivedMetricRule = async (req: Request, res: Response) => {
         // 1. Create the Virtual Metric first
         // We auto-generate the mqtt_param based on name or random
         const mqtt_param = `derived_${name.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
-        const newMetric = await createMetric({
+        const newMetric = await MetricModel.createMetric({
             site_id: siteId,
             display_name: name,
             display_name_tc: name, // User can update later
@@ -71,15 +71,27 @@ export const updateDerivedMetricRule = async (req: Request, res: Response) => {
 export const deleteDerivedMetricRule = async (req: Request, res: Response) => {
     const { siteId, id } = req.params;
     try {
-        const success = await DerivedMetricModel.deleteDerivedMetricRule(siteId, Number(id));
-        if (!success) {
+        // 1. Get the rule first to find the target_metric_id
+        const rule = await DerivedMetricModel.getDerivedMetricRuleById(siteId, Number(id));
+
+        if (!rule) {
             return res.status(404).json({ message: 'Derived metric rule not found' });
         }
-        // TODO: Should we delete the virtual metric too? 
-        // For strictness yes, but for now let's leave it or the user can delete it from Metrics UI.
-        // Actually, if we CASCADE delete on the rule -> metric link, deletion is complicated.
-        // The foreign key is `target_metric_id` in rule.
-        // Let's just delete the rule. The metric becomes an orphan "virtual" metric.
+
+        // 2. Delete the rule
+        const success = await DerivedMetricModel.deleteDerivedMetricRule(siteId, Number(id));
+
+        // 3. Delete the associated virtual metric if rule deletion was successful
+        if (success && rule.target_metric_id) {
+            try {
+                // Determine if we should also delete the metric? Yes, for derived metrics, the metric is virtual and owned by the rule.
+                await MetricModel.deleteMetric(rule.target_metric_id, siteId);
+            } catch (err) {
+                console.error("Failed to delete associated virtual metric:", err);
+                // Continue, as the rule is already deleted.
+            }
+        }
+
         res.status(204).send();
         mqttClient.publish('air-dome/config/reload', JSON.stringify({ type: 'derived_rules' }));
     } catch (error: any) {
